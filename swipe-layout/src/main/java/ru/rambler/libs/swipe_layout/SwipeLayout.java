@@ -35,6 +35,7 @@ public class SwipeLayout extends ViewGroup {
     private float touchSlop;
     private OnSwipeListener swipeListener;
     private WeakReference<ObjectAnimator> resetAnimator;
+    private WeakReference<ObjectAnimator> openAnimator;
     private final Map<View, Boolean> hackedParents = new WeakHashMap<>();
     private boolean leftSwipeEnabled = true;
     private boolean rightSwipeEnabled = true;
@@ -119,6 +120,36 @@ public class SwipeLayout extends ViewGroup {
         resetAnimator = new WeakReference<>(animator);
     }
 
+    public void animateOpenToLeft() {
+        if (centerView == null || rightView == null) return;
+
+        finishOpenAnimator();
+
+        ObjectAnimator animator = new ObjectAnimator();
+        animator.setTarget(this);
+        animator.setPropertyName("offset");
+        animator.setInterpolator(new AccelerateInterpolator());
+        animator.setIntValues(0, -rightView.getWidth());
+        animator.setDuration(200);
+        animator.start();
+        openAnimator = new WeakReference<>(animator);
+    }
+
+    public void animateOpenToRight() {
+        if (centerView == null || leftView == null) return;
+
+        finishOpenAnimator();
+
+        ObjectAnimator animator = new ObjectAnimator();
+        animator.setTarget(this);
+        animator.setPropertyName("offset");
+        animator.setInterpolator(new AccelerateInterpolator());
+        animator.setIntValues(0, leftView.getWidth());
+        animator.setDuration(200);
+        animator.start();
+        openAnimator = new WeakReference<>(animator);
+    }
+
     private void finishResetAnimator() {
         if (resetAnimator == null) return;
 
@@ -128,6 +159,30 @@ public class SwipeLayout extends ViewGroup {
             if (animator.isRunning()) {
                 animator.end();
             }
+        }
+    }
+
+    private void finishOpenAnimator() {
+        if (openAnimator == null) return;
+
+        ObjectAnimator animator = openAnimator.get();
+        if (animator != null) {
+            openAnimator.clear();
+            if (animator.isRunning()) {
+                animator.end();
+            }
+        }
+    }
+
+    public void toggle() {
+        if (centerView.getLeft() == 0) {
+            if (rightView != null) {
+                animateOpenToLeft();
+            } else {
+                animateOpenToRight();
+            }
+        } else {
+            animateReset();
         }
     }
 
@@ -648,8 +703,13 @@ public class SwipeLayout extends ViewGroup {
                 }
                 break;
 
-            case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
+                float dx = Math.abs(event.getX() - touchX);
+                if (dx == 0) {
+                    toggle();
+                    break;
+                }
+            case MotionEvent.ACTION_CANCEL:
                 if (touchState == TOUCH_STATE_SWIPE) {
                     unHackParents();
                     requestDisallowInterceptTouchEvent(false);
