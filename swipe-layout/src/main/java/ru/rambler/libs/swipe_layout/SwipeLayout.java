@@ -26,6 +26,7 @@ public class SwipeLayout extends ViewGroup {
 
     private static final String TAG = SwipeLayout.class.getSimpleName();
     private static final float VELOCITY_THRESHOLD = 1500f;
+    private static final float ALLOWED_TAP_THRESHOLD = 10f;
 
     private ViewDragHelper dragHelper;
     private View leftView;
@@ -168,7 +169,7 @@ public class SwipeLayout extends ViewGroup {
     }
 
     public void toggle() {
-        if (centerView.getLeft() == 0) {
+        if (getOffset() == 0) {
             animateOpen();
         } else {
             animateReset();
@@ -700,7 +701,8 @@ public class SwipeLayout extends ViewGroup {
                     if (event.getAction() == MotionEvent.ACTION_UP) {
                         int dx = (int) Math.abs(event.getX() - touchX);
                         int dy = (int) Math.abs(event.getY() - touchY);
-                        if (dx == 0 && dy == 0) {
+                        if (dx >= -ALLOWED_TAP_THRESHOLD && dx <= ALLOWED_TAP_THRESHOLD
+                                && dy >= -ALLOWED_TAP_THRESHOLD && dy <= ALLOWED_TAP_THRESHOLD) {
                             requestDisallowInterceptTouchEvent(false);
                             toggle();
                         }
