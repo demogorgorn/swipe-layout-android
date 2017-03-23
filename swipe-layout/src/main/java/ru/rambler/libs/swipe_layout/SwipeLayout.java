@@ -120,31 +120,24 @@ public class SwipeLayout extends ViewGroup {
         resetAnimator = new WeakReference<>(animator);
     }
 
-    public void animateOpenToLeft() {
-        if (centerView == null || rightView == null) return;
-
-        finishOpenAnimator();
-
-        ObjectAnimator animator = new ObjectAnimator();
-        animator.setTarget(this);
-        animator.setPropertyName("offset");
-        animator.setInterpolator(new AccelerateInterpolator());
-        animator.setIntValues(0, -rightView.getWidth());
-        animator.setDuration(200);
-        animator.start();
-        openAnimator = new WeakReference<>(animator);
+    public void animateOpen() {
+        int offset = rightView != null
+                ? -rightView.getWidth()
+                : (leftView != null ? leftView.getWidth() : 0);
+        if (offset != 0) {
+            animateOpen(offset);
+        }
     }
 
-    public void animateOpenToRight() {
-        if (centerView == null || leftView == null) return;
-
+    public void animateOpen(int offset) {
         finishOpenAnimator();
+        dragHelper.abort();
 
         ObjectAnimator animator = new ObjectAnimator();
         animator.setTarget(this);
         animator.setPropertyName("offset");
         animator.setInterpolator(new AccelerateInterpolator());
-        animator.setIntValues(0, leftView.getWidth());
+        animator.setIntValues(0, offset);
         animator.setDuration(200);
         animator.start();
         openAnimator = new WeakReference<>(animator);
@@ -176,11 +169,7 @@ public class SwipeLayout extends ViewGroup {
 
     public void toggle() {
         if (centerView.getLeft() == 0) {
-            if (rightView != null) {
-                animateOpenToLeft();
-            } else {
-                animateOpenToRight();
-            }
+            animateOpen();
         } else {
             animateReset();
         }
@@ -702,17 +691,20 @@ public class SwipeLayout extends ViewGroup {
                     }
                 }
                 break;
-
-            case MotionEvent.ACTION_UP:
-                float dx = Math.abs(event.getX() - touchX);
-                if (dx == 0) {
-                    toggle();
-                    break;
-                }
             case MotionEvent.ACTION_CANCEL:
+            case MotionEvent.ACTION_UP:
                 if (touchState == TOUCH_STATE_SWIPE) {
                     unHackParents();
                     requestDisallowInterceptTouchEvent(false);
+                } else {
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        int dx = (int) Math.abs(event.getX() - touchX);
+                        int dy = (int) Math.abs(event.getY() - touchY);
+                        if (dx == 0 && dy == 0) {
+                            requestDisallowInterceptTouchEvent(false);
+                            toggle();
+                        }
+                    }
                 }
                 touchState = TOUCH_STATE_WAIT;
                 break;
