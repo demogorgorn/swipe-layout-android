@@ -713,7 +713,12 @@ public class SwipeLayout extends ViewGroup {
         }
 
         if (event.getActionMasked() != MotionEvent.ACTION_MOVE || touchState == TOUCH_STATE_SWIPE) {
-            dragHelper.processTouchEvent(event);
+            try {
+                dragHelper.processTouchEvent(event);
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
 
         return true;
